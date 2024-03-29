@@ -32,3 +32,11 @@ about_keyboard = InlineKeyboardMarkup(
         [InlineKeyboardButton(text="Close", callback_data="close_data")],
     ]
 )
+
+cancel_keyboard = InlineKeyboardMarkup(
+    [
+        [
+            InlineKeyboardButton(text=f"❌ Cancel", callback_data=f"cancel_data"),
+        ],
+    ]
+)

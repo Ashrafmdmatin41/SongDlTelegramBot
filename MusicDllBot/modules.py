@@ -10,6 +10,7 @@ from MusicDllBot.helpers.functions import (
     send_song_results,
     send_link_results,
     download_stream,
+    cancel_in_msg
 )
 from MusicDllBot.helpers.keyboards import home_keyboard, help_keyboard, about_keyboard
 
@@ -85,18 +86,20 @@ async def search_song(c: bot, m: Message):
         song_name = " ".join(cmd[1:-1])
         limit = int(cmd[-1])
     elif len(cmd) == 2 and cmd[1].isdigit():
-        song = await c.ask(chat_id=m.chat.id, text="🎵 **Enter song name**")
+        song = await c.ask(chat_id=m.chat.id, text="🎵 **Enter song name**\n/cancel - to cancel search")
+        if await cancel_in_msg(song):
+            return
         song_name = song.text
         limit = int(cmd[1])
     else:
         # asks user to enter song name
-        song = await c.ask(chat_id=m.chat.id, text="🎵 **Enter song name**")
+        song = await c.ask(chat_id=m.chat.id, text="🎵 **Enter song name**\n/cancel - to cancel search")
+        if await cancel_in_msg(song):
+            return
         song_name = song.text
 
     # search for song
-    x = await c.send_message(
-        chat_id=m.chat.id, text="🔎 __Searching...__", reply_to_message_id=m.id
-    )
+    x = await c.send_message(chat_id=m.chat.id, text="🔎 __Searching...__")
 
     await send_song_results(c, m, song_name, limit)
 
@@ -126,6 +129,10 @@ async def dll(c: bot, cbq: CallbackQuery):
     await download_stream(c, cbq)
 
 
-@bot.on_callback_query(filters.regex(pattern="close_data"))
-async def delete_msg(cbq: CallbackQuery):
-    await cbq.message.delete()
+# @bot.on_callback_query(filters.regex(pattern="cancel_data"))
+# async def delete_msg(c: bot, cbq: CallbackQuery):
+#     path = os.path.join("downloads", str(cbq.message.chat.id))
+#     await cbq.message.delete()
+#     await c.send_message(chat_id=cbq.message.chat.id, text="**Download canceled!**")
+#     for i in os.listdir(path):
+#         os.remove(i)

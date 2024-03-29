@@ -4,10 +4,23 @@ from pytube.exceptions import AgeRestrictedError
 
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
+from MusicDllBot.helpers.keyboards import cancel_keyboard
+
 
 def search_song(song_name: str, limit: int = 1):
     songs = Search(song_name)
     return songs.results[0:limit]
+
+
+async def cancel_in_msg(msg):
+    if "/cancel" in msg.text:
+        await msg.reply_text("**Cancelled search!**")
+        return True
+    elif msg.text.startswith("/"):
+        await msg.reply_text("**Cancelled search!**")
+        return True
+    else:
+        return False
 
 
 async def progress_function(stream, chunk, bytes_remaining):
@@ -106,7 +119,7 @@ async def send_link_results(c, m, url: str):
 
 async def download_stream(c, cbq):
     download_output_path = os.path.join("downloads", str(cbq.message.chat.id))
-    await cbq.message.edit(text=f"**🎙 Downloading...**")
+    await cbq.message.edit(text="**🎙 Downloading...**")
     video_id = cbq.data.split("=")[-1].split(">")[0]
     ytUrl = f"https://www.youtube.com/watch?v={video_id}"
     yt = YouTube(ytUrl)
