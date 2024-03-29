@@ -1,0 +1,10 @@
+env/
+pyenv/
+__pycache__/
+downloads/
+
+config.py
+test.py 
+
+*.session
+*.session-journal
