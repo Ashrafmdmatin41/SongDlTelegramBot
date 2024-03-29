@@ -1,19 +1,15 @@
 import os
-from pytube import YouTube
-from pytube.exceptions import AgeRestrictedError
 
 from pyrogram import filters
 from pyrogram import __version__ as PYRO_VERSION
 from pyrogram.types import Message, CallbackQuery
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from MusicDllBot import bot, BOT_USERNAME, VERSION, BOT_NAME
 from MusicDllBot.helpers.functions import (
-    search_song,
-    progress_function,
-    send_progress,
     create_dir,
-    mp4_to_mp3,
+    send_song_results,
+    send_link_results,
+    download_stream,
 )
 from MusicDllBot.helpers.keyboards import home_keyboard, help_keyboard, about_keyboard
 
@@ -98,40 +94,12 @@ async def search_song(c: bot, m: Message):
         song_name = song.text
 
     # search for song
-    x = await c.send_message(chat_id=m.chat.id, text="🔎 __Searching...__", reply_to_message_id=m.id)
-    query_list = search_song(song_name=song_name, limit=limit)
+    x = await c.send_message(
+        chat_id=m.chat.id, text="🔎 __Searching...__", reply_to_message_id=m.id
+    )
 
-    # sends query to user chat
-    for yt in query_list:
-        try:
-            thumbnail_url = yt.thumbnail_url
-            caption = yt.title
-            stream = yt.streams.filter(abr="160kbps")[0]
-            filesize_mb = ("{0:.1f}").format(stream.filesize_mb)
-        except AgeRestrictedError as aer:
-            print(aer)
-            continue
-        except Exception as e:
-            print(e)
-            continue
-        download_keyboard = InlineKeyboardMarkup(
-            [
-                [
-                    InlineKeyboardButton(
-                        text=f"🎙 Download {filesize_mb}MB", callback_data=f"stream={yt}"
-                    ),
-                ],
-                [
-                    InlineKeyboardButton(text=f"❌ Close", callback_data=f"close_data"),
-                ],
-            ]
-        )
-        await c.send_photo(
-            chat_id=m.chat.id,
-            photo=thumbnail_url,
-            caption=f"`{caption}`",
-            reply_markup=download_keyboard,
-        )
+    await send_song_results(c, m, song_name, limit)
+
     await x.delete()
 
 
@@ -142,61 +110,22 @@ async def yt_links_dl(c: bot, m: Message):
     path = os.path.join("downloads", str(m.chat.id))
     create_dir(path)
     url = m.text
-    x = await c.send_message(chat_id=m.chat.id, text=f"🔎 __Searching...__", reply_to_message_id=m.id,)
-    yt = YouTube(url)
-    thumbnail_url = yt.thumbnail_url
-    caption = yt.title
-    stream = yt.streams.filter(abr="160kbps")[0]
-    filesize_mb = ("{0:.1f}").format(stream.filesize_mb)
-    download_keyboard = InlineKeyboardMarkup(
-        [
-            [
-                InlineKeyboardButton(
-                    text=f"🎙 Download {filesize_mb}MB", callback_data=f"stream={yt}"
-                ),
-            ],
-            [
-                InlineKeyboardButton(text=f"❌ Close", callback_data=f"close_data"),
-            ],
-        ]
-    )
-    await c.send_photo(
+    x = await c.send_message(
         chat_id=m.chat.id,
-        photo=thumbnail_url,
-        caption=f"`{caption}`",
-        reply_markup=download_keyboard,
+        text=f"🔎 __Searching...__",
+        reply_to_message_id=m.id,
     )
+    await send_link_results(c, m, url)
     await x.delete()
 
 
 @bot.on_callback_query(filters.regex(pattern="^(stream=.)"))
-async def download_stream(c: bot, cbq: CallbackQuery):
+async def dll(c: bot, cbq: CallbackQuery):
     path = os.path.join("downloads", str(cbq.message.chat.id))
     create_dir(path)
-    download_output_path = os.path.join("downloads", str(cbq.message.chat.id))
-    await cbq.message.edit(text=f"**🎙 Downloading...**")
-    video_id = cbq.data.split("=")[-1].split(">")[0]
-    ytUrl = f"https://www.youtube.com/watch?v={video_id}"
-    yt = YouTube(
-        ytUrl,
-        # on_progress_callback=lambda stream, chunk, bytes_remaining:progress_function(stream, chunk, bytes_remaining)
-    )
-    stream = yt.streams.filter(abr="160kbps")[0]
-    mp4_path = stream.download(output_path=download_output_path)
-    await cbq.message.edit(text=f"Converting to mp3...")
-    mp3_path = mp4_to_mp3(mp4_path)
-    await c.send_audio(
-        chat_id=cbq.message.chat.id,
-        audio=mp3_path,
-        caption=f"`{yt.title}`",
-        duration=yt.length,
-        title=f"{yt.title}",
-        progress=lambda current, total: send_progress(current, total, cbq.message),
-    )
-    await cbq.message.delete()
-    os.remove(mp3_path)
+    await download_stream(c, cbq)
 
 
 @bot.on_callback_query(filters.regex(pattern="close_data"))
-async def delete_msg(c: bot, cbq: CallbackQuery):
+async def delete_msg(cbq: CallbackQuery):
     await cbq.message.delete()
