@@ -13,9 +13,11 @@ from MusicDllBot.helpers.functions import (
     cancel_in_msg
 )
 from MusicDllBot.helpers.keyboards import home_keyboard, help_keyboard, about_keyboard
+from MusicDllBot.decorators.force_sub import force_sub
 
 
 @bot.on_message(filters.command("start"))
+@force_sub
 async def start(c: bot, m: Message):
     global start_text
     start_text = f"""Hey! 🩷 {m.from_user.mention}, welcome to @{BOT_USERNAME}.
@@ -71,6 +73,7 @@ async def help_cmd(c: bot, cbq: CallbackQuery):
 
 
 @bot.on_message(filters.command("search"))
+@force_sub
 async def search_song(c: bot, m: Message):
 
     # create user directory
@@ -106,9 +109,8 @@ async def search_song(c: bot, m: Message):
     await x.delete()
 
 
-@bot.on_message(
-    filters.regex(pattern=r"https://youtu\.be/[a-zA-Z0-9_-]+(\?[a-zA-Z0-9_=-]+)?")
-)
+@bot.on_message(filters.regex(pattern=r"https://youtu\.be/[a-zA-Z0-9_-]+(\?[a-zA-Z0-9_=-]+)?"))
+@force_sub
 async def yt_links_dl(c: bot, m: Message):
     path = os.path.join("downloads", str(m.chat.id))
     create_dir(path)
