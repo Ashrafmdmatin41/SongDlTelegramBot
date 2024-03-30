@@ -2,6 +2,8 @@ import os
 
 from pyromod import Client
 
+from MusicDllBot.services.spotify import Spotify
+
 if os.path.exists("config.py"):
     from config import *
 else:
@@ -14,6 +16,10 @@ bot = Client(
     api_id=API_ID,
     api_hash=API_HASH,
     bot_token=BOT_TOKEN,
+)
+
+spotify = Spotify(
+    spotify_client_id=SPOTIFY_CLIENT_ID, spotify_client_secret=SPOTIFY_CLIENT_SECRET
 )
 
 bot.start()

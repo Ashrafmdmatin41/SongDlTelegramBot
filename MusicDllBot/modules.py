@@ -4,13 +4,13 @@ from pyrogram import filters
 from pyrogram import __version__ as PYRO_VERSION
 from pyrogram.types import Message, CallbackQuery
 
-from MusicDllBot import bot, BOT_USERNAME, VERSION, BOT_NAME
+from MusicDllBot import bot, BOT_USERNAME, VERSION, BOT_NAME, spotify
 from MusicDllBot.helpers.functions import (
     create_dir,
     send_song_results,
     send_link_results,
     download_stream,
-    cancel_in_msg
+    cancel_in_msg,
 )
 from MusicDllBot.helpers.keyboards import home_keyboard, help_keyboard, about_keyboard
 from MusicDllBot.decorators.force_sub import force_sub
@@ -51,7 +51,8 @@ async def help_cmd(c: bot, cbq: CallbackQuery):
 
 /search __song_name__ __limit__ -> search the song and gives results
 
-**Or just send youtube link to download it.**"""
+**Or just send youtube link to download**
+**Or send spotify link to download.**"""
 
     await cbq.message.edit(text=help_text, reply_markup=help_keyboard)
 
@@ -61,6 +62,10 @@ async def help_cmd(c: bot, cbq: CallbackQuery):
     about_text = f"""**🤖 Bot Name :** `{BOT_NAME}`
 **🛠 Bot Version :** `{VERSION}`
 **⚒ Pyrogram Version :** `{PYRO_VERSION}`
+
+**⚙️ Supported Platforms**
+- YouTube
+- Spotify
 
 **Developed by ~** 🩵 @minkxx69
 """
@@ -89,14 +94,18 @@ async def search_song(c: bot, m: Message):
         song_name = " ".join(cmd[1:-1])
         limit = int(cmd[-1])
     elif len(cmd) == 2 and cmd[1].isdigit():
-        song = await c.ask(chat_id=m.chat.id, text="🎵 **Enter song name**\n/cancel - to cancel search")
+        song = await c.ask(
+            chat_id=m.chat.id, text="🎵 **Enter song name**\n/cancel - to cancel search"
+        )
         if await cancel_in_msg(song):
             return
         song_name = song.text
         limit = int(cmd[1])
     else:
         # asks user to enter song name
-        song = await c.ask(chat_id=m.chat.id, text="🎵 **Enter song name**\n/cancel - to cancel search")
+        song = await c.ask(
+            chat_id=m.chat.id, text="🎵 **Enter song name**\n/cancel - to cancel search"
+        )
         if await cancel_in_msg(song):
             return
         song_name = song.text
@@ -109,7 +118,9 @@ async def search_song(c: bot, m: Message):
     await x.delete()
 
 
-@bot.on_message(filters.regex(pattern=r"https://youtu\.be/[a-zA-Z0-9_-]+(\?[a-zA-Z0-9_=-]+)?"))
+@bot.on_message(
+    filters.regex(pattern=r"https://youtu\.be/[a-zA-Z0-9_-]+(\?[a-zA-Z0-9_=-]+)?")
+)
 @force_sub
 async def yt_links_dl(c: bot, m: Message):
     path = os.path.join("downloads", str(m.chat.id))
@@ -121,6 +132,7 @@ async def yt_links_dl(c: bot, m: Message):
         reply_to_message_id=m.id,
     )
     await send_link_results(c, m, url)
+
     await x.delete()
 
 
@@ -138,3 +150,56 @@ async def dll(c: bot, cbq: CallbackQuery):
 #     await c.send_message(chat_id=cbq.message.chat.id, text="**Download canceled!**")
 #     for i in os.listdir(path):
 #         os.remove(i)
+
+
+@bot.on_message(filters.regex(pattern=r"^(https:\/\/open.spotify.com\/)(.*)$"))
+@force_sub
+async def spotify_dl(c: bot, m: Message):
+    url = m.text
+    if "track" in url:
+        data = spotify.getTrack(url)
+        song_info = data[0]
+        x = await c.send_message(
+            chat_id=m.chat.id,
+            text=f"🔎 __Searching...__",
+            reply_to_message_id=m.id,
+        )
+        # thumbnail = data[1]
+        # song_name = data[2]
+
+        await send_song_results(c, m, song_info, 1)
+
+        await x.delete()
+
+    elif "album" in url:
+        data = spotify.getAlbum(url)
+        songs_info_list = data[1]
+        x = await c.send_message(
+            chat_id=m.chat.id,
+            text=f"🔎 __Searching...__",
+            reply_to_message_id=m.id,
+        )
+        length = len(songs_info_list)
+        for song_info in songs_info_list:
+            await x.edit(text=f"🔎 __Searching songs...__\n{length}. `{song_info}`")
+            await send_song_results(c, m, song_info, 1)
+            length -= 1
+
+        await x.delete()
+
+    elif "playlist" in url:
+        data = spotify.getPlaylist(url)
+        songs_list = data[1]
+        x = await c.send_message(
+            chat_id=m.chat.id,
+            text=f"🔎 __Searching...__",
+            reply_to_message_id=m.id,
+        )
+        length = len(songs_list)
+        for i in songs_list:
+            song_info = i[0]
+            await x.edit(text=f"🔎 __Searching...__\n{length}. `{song_info}`")
+            await send_song_results(c, m, song_info, 1)
+            length -= 1
+
+        await x.delete()
