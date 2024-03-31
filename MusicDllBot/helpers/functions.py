@@ -2,9 +2,10 @@ import os
 from pytube import Search, YouTube
 from pytube.exceptions import AgeRestrictedError
 
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-
 from MusicDllBot.helpers.keyboards import cancel_keyboard
+from MusicDllBot.helpers.ikb import ikb
+
+buttons_dict = {}
 
 
 def search_song(song_name: str, limit: int = 1):
@@ -63,30 +64,24 @@ async def send_song_results(
         try:
             thumbnail_url = yt.thumbnail_url
             caption = yt.title
-            stream = yt.streams.filter(abr="160kbps")[0]
-            filesize_mb = ("{0:.1f}").format(stream.filesize_mb)
+            streams = yt.streams.filter(only_audio=True)
         except AgeRestrictedError as aer:
             print(aer)
             continue
         except Exception as e:
             print(e)
             continue
-        download_keyboard = InlineKeyboardMarkup(
-            [
-                [
-                    InlineKeyboardButton(
-                        text=f"🎙 Download {filesize_mb}MB", callback_data=f"stream={yt}"
-                    ),
-                ],
-                [
-                    InlineKeyboardButton(text=f"❌ Close", callback_data=f"close_data"),
-                ],
-            ]
-        )
+        for stream in streams:
+            filesize_mb = ("{0:.1f}").format(stream.filesize_mb)
+            x = stream.abr
+            abr = x.split("k")[0]
+            buttons_dict[f"🎙 {x} {filesize_mb}MB"] = f"stream={yt}={abr}"
+        download_keyboard = ikb(buttons_dict)
+
         await c.send_photo(
             chat_id=m.chat.id,
             photo=thumbnail_url,
-            caption=f"`{caption}`",
+            caption=f"`{caption}`\n\n**Click below button to download**",
             reply_markup=download_keyboard,
         )
 
@@ -95,24 +90,17 @@ async def send_link_results(c, m, url: str):
     yt = YouTube(url)
     thumbnail_url = yt.thumbnail_url
     caption = yt.title
-    stream = yt.streams.filter(abr="160kbps")[0]
-    filesize_mb = ("{0:.1f}").format(stream.filesize_mb)
-    download_keyboard = InlineKeyboardMarkup(
-        [
-            [
-                InlineKeyboardButton(
-                    text=f"🎙 Download {filesize_mb}MB", callback_data=f"stream={yt}"
-                ),
-            ],
-            [
-                InlineKeyboardButton(text=f"❌ Close", callback_data=f"close_data"),
-            ],
-        ]
-    )
+    streams = yt.streams.filter(only_audio=True)
+    for stream in streams:
+        filesize_mb = ("{0:.1f}").format(stream.filesize_mb)
+        x = stream.abr
+        abr = x.split("k")[0]
+        buttons_dict[f"🎙 {x} {filesize_mb}MB"] = f"stream={yt}={abr}"
+    download_keyboard = ikb(buttons_dict)
     await c.send_photo(
         chat_id=m.chat.id,
         photo=thumbnail_url,
-        caption=f"`{caption}`",
+        caption=f"`{caption}`\n\n**Click below button to download**",
         reply_markup=download_keyboard,
     )
 
@@ -120,10 +108,11 @@ async def send_link_results(c, m, url: str):
 async def download_stream(c, cbq):
     download_output_path = os.path.join("downloads", str(cbq.message.chat.id))
     await cbq.message.edit(text="**🎙 Downloading...**")
-    video_id = cbq.data.split("=")[-1].split(">")[0]
+    video_id = cbq.data.split("=")[-2].split(">")[0]
+    abr = cbq.data.split("=")[-1]
     ytUrl = f"https://www.youtube.com/watch?v={video_id}"
     yt = YouTube(ytUrl)
-    stream = yt.streams.filter(abr="160kbps")[0]
+    stream = yt.streams.filter(abr=f"{abr}kbps", only_audio=True)[0]
     mp4_path = stream.download(output_path=download_output_path)
     await cbq.message.edit(text=f"Converting to mp3...")
     mp3_path = mp4_to_mp3(mp4_path)

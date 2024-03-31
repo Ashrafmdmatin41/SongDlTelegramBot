@@ -6,7 +6,7 @@ from pyrogram import filters
 from pyrogram import __version__ as PYRO_VERSION
 from pyrogram.types import Message, CallbackQuery
 
-from MusicDllBot import bot, BOT_USERNAME, VERSION, BOT_NAME, spotify
+from MusicDllBot import bot, BOT_USERNAME, VERSION, BOT_NAME, spotify, LOG_GROUP
 from MusicDllBot.helpers.functions import (
     create_dir,
     send_song_results,
@@ -85,10 +85,10 @@ async def help_cmd(c: bot, cbq: CallbackQuery):
 
 @bot.on_message(filters.command("lyrics"))
 @force_sub
-async def start(c: bot, m: Message):
+async def send_lyrics(c: bot, m: Message):
     cmd = m.command
     if len(cmd) > 1:
-        song_name = " ".join(cmd[1:])
+        song_name: str = "+".join(cmd[1:])
     else:
         song = await c.ask(
             chat_id=m.chat.id,
@@ -96,19 +96,31 @@ async def start(c: bot, m: Message):
         )
         if await cancel_in_msg(song):
             return
-        song_name = song.text
+        song_name: str = (song.text).replace(" ", "+")
 
     x = await c.send_message(chat_id=m.chat.id, text="🔎 __Searching lyrics...__")
 
-    url = f"https://apis.xditya.me/lyrics?song={song_name}"
-    res = requests.get(url)
-    data = res.json()
-    lyrics = data["lyrics"]
+    try:
+        print(song_name)
+        url = f"https://apis.xditya.me/lyrics?song={song_name}"
+        res = requests.get(url)
+        data = res.json()
+        lyrics = data["lyrics"]
 
-    await c.send_message(
-        chat_id=m.chat.id,
-        text=f"`{lyrics}`",
-    )
+        await c.send_message(
+            chat_id=m.chat.id,
+            text=f"`{lyrics}`",
+        )
+
+    except Exception as e:
+        await c.send_message(
+            chat_id=m.chat.id,
+            text=f"**Can't find lyrics for** `{song_name}`",
+        )
+        await c.send_message(
+            chat_id=LOG_GROUP,
+            text=f"**Some error occured for chat** `{m.chat.id}`\n\n`{e}`",
+        )
 
     await x.delete()
 
@@ -176,11 +188,12 @@ async def yt_links_dl(c: bot, m: Message):
     await x.delete()
 
 
-@bot.on_callback_query(filters.regex(pattern="^(stream=.)"))
+@bot.on_callback_query(filters.regex(pattern="^(stream=.*=.*)$"))
 async def dll(c: bot, cbq: CallbackQuery):
     path = os.path.join("downloads", str(cbq.message.chat.id))
     create_dir(path)
     await download_stream(c, cbq)
+    # await test(c, cbq)
 
 
 @bot.on_message(filters.regex(pattern=r"^(https:\/\/open.spotify.com\/)(.*)$"))
