@@ -7,7 +7,7 @@
 
 [![](https://img.shields.io/badge/SongDlTelegramBot-v1.0-crimson)](#)
 [![Stars](https://img.shields.io/github/stars/minkxx/SongDlTelegramBot?style=flat-square&color=yellow)](https://github.com/minkxx/SongDlTelegramBot/stargazers)
-[![Forks](https://img.shields.io/github/forks/minkxxSongDlTelegramBotAssistantBot?style=flat-square&color=orange)](https://github.com/minkxx/SongDlTelegramBot/fork)
+[![Forks](https://img.shields.io/github/forks/minkxx/SongDlTelegramBot?style=flat-square&color=orange)](https://github.com/minkxx/SongDlTelegramBot/fork)
 [![Size](https://img.shields.io/github/repo-size/minkxx/SongDlTelegramBot?style=flat-square&color=green)](https://github.com/minkxx/SongDlTelegramBot/)   
 [![Python](https://img.shields.io/badge/Python-v3.11.4-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/License-GPL-blue)](https://github.com/minkxx/SongDlTelegramBot/blob/master/LICENSE) 
