@@ -3,6 +3,7 @@
 </h1>
 
 <b>Telegram music downloader bot</b>
+<b>Version : 1.0.0</b>
 
 [![](https://img.shields.io/badge/SongDlTelegramBot-v1.0-crimson)](#)
 [![Stars](https://img.shields.io/github/stars/minkxx/SongDlTelegramBot?style=flat-square&color=yellow)](https://github.com/minkxx/SongDlTelegramBot/stargazers)
